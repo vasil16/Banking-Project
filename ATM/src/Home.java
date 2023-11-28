@@ -1,108 +1,136 @@
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 
-import java.awt.BorderLayout;
 import javax.swing.SwingConstants;
 import java.awt.Font;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.awt.event.ActionEvent;
-import javax.swing.JFormattedTextField;
 import java.awt.Panel;
 import java.awt.Color;
 import java.awt.Label;
 import java.awt.TextField;
 import java.awt.Button;
+import java.sql.SQLException;
 
 public class Home extends JFrame {
 	
 	int balance=0;
 	int amount;
 	int pin;
+	int customerId;
 	
 	
 	
-	public Home() {
+	public Home(int CustomerId) 
+	{
 		super("Home");
-		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		this.customerId = CustomerId;
 		setSize(572,418);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setLocationRelativeTo(null);
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		getContentPane().setLayout(null);
 		build();
 		
-		
-		
-		
 	}
-	public void build() {
+
+	public Home()
+	{
 		
-		
+		System.out.println("con call");
+	}
+
 	
-		
-		
+	public void build() 
+	{
 		JLabel lbl1 = new JLabel("Choose An Option");
 		lbl1.setHorizontalAlignment(SwingConstants.CENTER);
 		lbl1.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
 		lbl1.setBounds(114, 22, 312, 42);
 		getContentPane().add(lbl1);
-		Panel panelwd = new Panel();
-		panelwd.setBackground(Color.LIGHT_GRAY);
-		panelwd.setBounds(254, 75, 125, 150);
 		
-		panelwd.setLayout(null);
+		
+		//Withdraw Panel
+		Panel withdrawPanel = new Panel();
+		withdrawPanel.setBackground(Color.LIGHT_GRAY);
+		withdrawPanel.setBounds(254, 75, 256, 230);
+		
+		withdrawPanel.setLayout(null);
 		Label withAmt = new Label("Enter Amount");
+		withAmt.setAlignment(Label.CENTER);
 		withAmt.setFont(new Font("Dialog", Font.BOLD, 12));
 		withAmt.setForeground(Color.WHITE);
-		withAmt.setBounds(10, 22, 79, 22);
-		panelwd.add(withAmt);
+		withAmt.setBounds(65, 50, 135, 22);
+		withdrawPanel.add(withAmt);
 		
 		TextField getwithAmt = new TextField();
-		getwithAmt.setBounds(10, 54, 89, 22);
-		panelwd.add(getwithAmt);
+		getwithAmt.setBounds(85, 94, 89, 22);
+		withdrawPanel.add(getwithAmt);
 		
 		Button withcnf = new Button("Confirm");
 		withcnf.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
+				if(getwithAmt.getText().isBlank() || !getwithAmt.getText().matches("\\d"))
+				{
+					JOptionPane.showMessageDialog(null, "Enter Valid Amount");
+					getwithAmt.setText("");
+					return;
+				}
 				String amtstr=getwithAmt.getText();
 				amount=Integer.parseInt(amtstr);
-				if(amount<=0) {
-					JOptionPane.showMessageDialog(null, "Invalid Amount");
 				
+				if(amount<=0)
+				{
+					JOptionPane.showMessageDialog(null, "Enter Valid Amount");
+					getwithAmt.setText("");
+					return;
 				}
-				else if(amount>balance) {
+				
+				Withdraw withdraw = new Withdraw();
+				if(!withdraw.isBalanceSufficient(customerId, amount))
+				{
 					JOptionPane.showMessageDialog(null, "Insufficient Balance");
-					getContentPane().remove(panelwd);
+					getwithAmt.setText("");
+					getContentPane().remove(withdrawPanel);
 				}
-				else {
-				balance=balance-amount;
-				JOptionPane.showMessageDialog(null, "Withdraw Complete!!Available Balance: "+balance);
-				getContentPane().remove(panelwd);
+				
+				else
+				{
+					balance = withdraw.withdrawAmount(customerId, amount);
+					getwithAmt.setText("");
+					JOptionPane.showMessageDialog(null, "Withdraw Complete!!Available Balance: "+balance);
+					getContentPane().remove(withdrawPanel);
 				}
 			}
 		});
-		withcnf.setBounds(10, 101, 70, 22);
-		panelwd.add(withcnf);
+		withcnf.setBounds(85, 138, 89, 22);
+		withdrawPanel.add(withcnf);
+						
 		
-		Panel paneldep = new Panel();
-		paneldep.setBackground(Color.LIGHT_GRAY);
-		paneldep.setForeground(Color.PINK);
-		paneldep.setBounds(385, 75, 125, 150);
+		Panel depositPanel = new Panel();
+		depositPanel.setBackground(Color.LIGHT_GRAY);
+		depositPanel.setForeground(Color.PINK);
+		depositPanel.setBounds(254, 75, 256, 230);
 		
-		paneldep.setLayout(null);
+		depositPanel.setLayout(null);
 		
 		Label depAmt = new Label("Enter Amount");
 		depAmt.setFont(new Font("Dialog", Font.BOLD, 12));
 		depAmt.setForeground(Color.WHITE);
 		depAmt.setBounds(10, 22, 79, 22);
-		paneldep.add(depAmt);
+		depositPanel.add(depAmt);
 		
 		TextField getdepAmt = new TextField();
 		getdepAmt.setForeground(Color.BLACK);
 		getdepAmt.setBounds(10, 50, 89, 22);
-		paneldep.add(getdepAmt);
+		depositPanel.add(getdepAmt);
 		
 		Button depcnf_1 = new Button("Confirm");
 		depcnf_1.addActionListener(new ActionListener() {
@@ -117,20 +145,23 @@ public class Home extends JFrame {
 				{
 				balance=balance+amount;
 				JOptionPane.showMessageDialog(null, "Deposit Complete!!Available Balance: "+balance);
-				getContentPane().remove(paneldep);
+				getContentPane().remove(depositPanel);
 				}
 			}
 		});
 		depcnf_1.setForeground(Color.BLACK);
 		depcnf_1.setBounds(10, 101, 70, 22);
-		paneldep.add(depcnf_1);
-		setVisible(true);
+		depositPanel.add(depcnf_1);
+				
 		
 		
+		
+		//Home UI
 		JButton blnc = new JButton("Check Balance");
 		blnc.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
+				FetchBalance();
 				JOptionPane.showMessageDialog(null, "Available Balance:"+ balance);
 			}
 		});
@@ -138,32 +169,55 @@ public class Home extends JFrame {
 		blnc.setAlignmentX(CENTER_ALIGNMENT);
 		getContentPane().add(blnc);
 		
-		JButton wdr = new JButton("Withdraw");
-		wdr.addActionListener(new ActionListener() {
+		JButton withdrawBtn = new JButton("Withdraw");
+		withdrawBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
-				
-				getContentPane().add(panelwd);
+				if(depositPanel.isEnabled())
+				{
+					getContentPane().remove(depositPanel);
+				}
+				getContentPane().add(withdrawPanel);
 				 
 			}
 
 			
 		});
-		wdr.setBounds(52, 169, 140, 50);
-		getContentPane().add(wdr);
+		withdrawBtn.setBounds(52, 169, 140, 50);
+		getContentPane().add(withdrawBtn);
 		
-		JButton dps = new JButton("Deposit");
-		dps.addActionListener(new ActionListener() {
+		JButton depositBtn = new JButton("Deposit");
+		depositBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
-				getContentPane().add(paneldep);
+				if(withdrawPanel.isEnabled())
+				{
+					getContentPane().remove(withdrawPanel);
+				}
+				getContentPane().add(depositPanel);
 				
 			}
 		});
-		dps.setBounds(52, 255, 140, 50);
-		getContentPane().add(dps);
+		depositBtn.setBounds(52, 255, 140, 50);
+//		getContentPane().add(depositBtn);
+		
+		JButton transactionBtn = new JButton("Transactions");
+		transactionBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+				if(withdrawPanel.isEnabled())
+				{
+					getContentPane().remove(withdrawPanel);
+				}
+				getContentPane().add(depositPanel);
+				
+			}
+		});
+		transactionBtn.setBounds(52, 255, 140, 50);
+//		getContentPane().add(transactionBtn);
 		
 		JButton logout = new JButton("Logout");
+		logout.setBackground(new Color(255, 0, 2));
 		logout.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
@@ -171,16 +225,48 @@ public class Home extends JFrame {
 				new Login();
 			}
 		});
-		logout.setBounds(423, 311, 89, 23);
+		logout.setBounds(421, 336, 89, 23);
 		getContentPane().add(logout);
 		
+		JButton pinchangeBtn = new JButton("Change Pin");
+		pinchangeBtn.setBounds(449, 6, 117, 29);
+		pinchangeBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e)
+			{
+				new PinChange(customerId, Home.this);
+			}
+		});
+		
+		getContentPane().add(pinchangeBtn);
+		
+		setVisible(true);
+		setResizable(false);
 		
 	}
-	
-	
-	public static void main(String[]args) {
-		
-		new Login();
-		
+
+	private void FetchBalance()
+	{
+		try
+		{
+			Connection connection = DriverManager.getConnection(DBSetup.url);
+			String query = "SELECT balance FROM Accounts WHERE customer_id = ? ";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) 
+            {
+                preparedStatement.setInt(1, customerId);
+
+                try (ResultSet resultSet = preparedStatement.executeQuery()) 
+                {
+					if(resultSet.next())
+					{
+						balance = (int) (resultSet.getDouble("balance"));
+					}
+                }
+            }
+			
+		}
+		catch(SQLException e)
+		{
+			e.printStackTrace();
+		}
 	}
 }
